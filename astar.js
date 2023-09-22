@@ -1,4 +1,4 @@
-// A javascript Program to implement A* Search Algorithm
+// TODO: Update how the heuristic value is calculated. (Manhattan distance)
 
 let ROW = 9;
 let COL = 10;
@@ -31,13 +31,6 @@ function isValid(row, col) {
 function isUnBlocked(grid, row, col) {
   //   Returns true if the cell is not blocked else falses
   if (grid[row][col] == 1) return true;
-  else return false;
-}
-
-// A Utility Function to check whether destination cell has
-// been reached or not
-function isDestination(row, col, dest) {
-  if (row == dest[0] && col == dest[1]) return true;
   else return false;
 }
 
@@ -110,14 +103,8 @@ function aStarSearch(grid, src, dest) {
     return;
   }
 
-  // If the destination cell is the same as source cell
-  if (isDestination(src[0], src[1], dest) == true) {
-    console.log("We are already at the destination\n");
-    return;
-  }
-
   // Create a closed list and initialise it to false which
-  // means that no cell has been included yet This closed
+  // means that no cell has been included yet. This closed
   // list is implemented as a boolean 2D array
   let closedList = new Array(ROW);
   for (let i = 0; i < ROW; i++) {
@@ -133,6 +120,8 @@ function aStarSearch(grid, src, dest) {
 
   let i, j;
 
+  // Initialize all nodes in the maze the same f,g and h values.
+  // It's best to have all the cells initialized before we start searching
   for (i = 0; i < ROW; i++) {
     for (j = 0; j < COL; j++) {
       cellDetails[i][j] = new cell();
@@ -160,6 +149,9 @@ function aStarSearch(grid, src, dest) {
 	Note that 0 <= i <= ROW-1 & 0 <= j <= COL-1
 	This open list is implemented as a set of pair of
 	pair.*/
+
+  // TODO: Implement this with a priority queue instead of a map.
+  // It's basically the same structure <f, <i,j>>. Except the priority queue is going to sort the elements as we enqueue
   let openList = new Map();
 
   // Put the starting cell on the open list and set its
@@ -171,6 +163,7 @@ function aStarSearch(grid, src, dest) {
   let foundDest = false;
 
   while (openList.size > 0) {
+    // This returns a 2D array like this [0, [8,2]]
     let p = openList.entries().next().value;
 
     // Remove this vertex from the open list
@@ -179,183 +172,24 @@ function aStarSearch(grid, src, dest) {
     // Add this vertex to the closed list
     i = p[1][0];
     j = p[1][1];
+
+    // TODO: Either keep the closed list as is, or instead of being true or false. Replace it with a number
+    // TODO: Start with 0 and then increment everytime you add a node to the closed list
     closedList[i][j] = true;
 
     /*
-		Generating all the 8 successor of this cell
-
-			N.W N N.E
-			\ | /
-				\ | /
-			W----Cell----E
-				/ | \
-				/ | \
-			S.W S S.E
+		Generating all the 4 successors of this cell
 
 		Cell-->Popped Cell (i, j)
 		N --> North	 (i-1, j)
 		S --> South	 (i+1, j)
 		E --> East	 (i, j+1)
-		W --> West		 (i, j-1)
-		N.E--> North-East (i-1, j+1)
-		N.W--> North-West (i-1, j-1)
-		S.E--> South-East (i+1, j+1)
-		S.W--> South-West (i+1, j-1)*/
+		W --> West		 (i, j-1)*/
 
-    // To store the 'g', 'h' and 'f' of the 8 successors
+    // To store the generated 'g', 'h' and 'f' of the successors
     let gNew, hNew, fNew;
 
-    //----------- 1st Successor (North) ------------
-
-    // Only process this cell if this is a valid one
-    if (isValid(i - 1, j) == true) {
-      // If the destination cell is the same as the
-      // current successor
-      if (isDestination(i - 1, j, dest) == true) {
-        // Set the Parent of the destination cell
-        cellDetails[i - 1][j].parent_i = i;
-        cellDetails[i - 1][j].parent_j = j;
-        console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
-        foundDest = true;
-        return;
-      }
-      // If the successor is already on the closed
-      // list or if it is blocked, then ignore it.
-      // Else do the following
-      else if (
-        closedList[i - 1][j] == false &&
-        isUnBlocked(grid, i - 1, j) == true
-      ) {
-        gNew = cellDetails[i][j].g + 1;
-        hNew = calculateHValue(i - 1, j, dest);
-        fNew = gNew + hNew;
-
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
-        //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
-        if (
-          cellDetails[i - 1][j].f == 2147483647 ||
-          cellDetails[i - 1][j].f > fNew
-        ) {
-          openList.set(fNew, [i - 1, j]);
-
-          // Update the details of this cell
-          cellDetails[i - 1][j].f = fNew;
-          cellDetails[i - 1][j].g = gNew;
-          cellDetails[i - 1][j].h = hNew;
-          cellDetails[i - 1][j].parent_i = i;
-          cellDetails[i - 1][j].parent_j = j;
-        }
-      }
-    }
-
-    //----------- 2nd Successor (South) ------------
-
-    // Only process this cell if this is a valid one
-    if (isValid(i + 1, j) == true) {
-      // If the destination cell is the same as the
-      // current successor
-      if (isDestination(i + 1, j, dest) == true) {
-        // Set the Parent of the destination cell
-        cellDetails[i + 1][j].parent_i = i;
-        cellDetails[i + 1][j].parent_j = j;
-        console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
-        foundDest = true;
-        return;
-      }
-      // If the successor is already on the closed
-      // list or if it is blocked, then ignore it.
-      // Else do the following
-      else if (
-        closedList[i + 1][j] == false &&
-        isUnBlocked(grid, i + 1, j) == true
-      ) {
-        gNew = cellDetails[i][j].g + 1;
-        hNew = calculateHValue(i + 1, j, dest);
-        fNew = gNew + hNew;
-
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
-        //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
-        if (
-          cellDetails[i + 1][j].f == 2147483647 ||
-          cellDetails[i + 1][j].f > fNew
-        ) {
-          openList.set(fNew, [i + 1, j]);
-          // Update the details of this cell
-          cellDetails[i + 1][j].f = fNew;
-          cellDetails[i + 1][j].g = gNew;
-          cellDetails[i + 1][j].h = hNew;
-          cellDetails[i + 1][j].parent_i = i;
-          cellDetails[i + 1][j].parent_j = j;
-        }
-      }
-    }
-
-    //----------- 3rd Successor (East) ------------
-
-    // Only process this cell if this is a valid one
-    if (isValid(i, j + 1) == true) {
-      // If the destination cell is the same as the
-      // current successor
-      if (isDestination(i, j + 1, dest) == true) {
-        // Set the Parent of the destination cell
-        cellDetails[i][j + 1].parent_i = i;
-        cellDetails[i][j + 1].parent_j = j;
-        console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
-        foundDest = true;
-        return;
-      }
-
-      // If the successor is already on the closed
-      // list or if it is blocked, then ignore it.
-      // Else do the following
-      else if (
-        closedList[i][j + 1] == false &&
-        isUnBlocked(grid, i, j + 1) == true
-      ) {
-        gNew = cellDetails[i][j].g + 1;
-        hNew = calculateHValue(i, j + 1, dest);
-        fNew = gNew + hNew;
-
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
-        //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
-        if (
-          cellDetails[i][j + 1].f == 2147483647 ||
-          cellDetails[i][j + 1].f > fNew
-        ) {
-          openList.set(fNew, [i, j + 1]);
-
-          // Update the details of this cell
-          cellDetails[i][j + 1].f = fNew;
-          cellDetails[i][j + 1].g = gNew;
-          cellDetails[i][j + 1].h = hNew;
-          cellDetails[i][j + 1].parent_i = i;
-          cellDetails[i][j + 1].parent_j = j;
-        }
-      }
-    }
-
-    //----------- 4th Successor (West) ------------
+    //----------- 1st Successor (West) --------
 
     // Only process this cell if this is a valid one
     if (isValid(i, j - 1) == true) {
@@ -378,7 +212,8 @@ function aStarSearch(grid, src, dest) {
         closedList[i][j - 1] == false &&
         isUnBlocked(grid, i, j - 1) == true
       ) {
-        gNew = cellDetails[i][j].g + 1;
+        // cost to go west is 2
+        gNew = cellDetails[i][j].g + 2;
         hNew = calculateHValue(i, j - 1, dest);
         fNew = gNew + hNew;
 
@@ -406,32 +241,31 @@ function aStarSearch(grid, src, dest) {
       }
     }
 
-    //----------- 5th Successor (North-East)
-    //------------
+    //----------- 2nd Successor (North) ------------
 
     // Only process this cell if this is a valid one
-    if (isValid(i - 1, j + 1) == true) {
+    if (isValid(i - 1, j) == true) {
       // If the destination cell is the same as the
       // current successor
-      if (isDestination(i - 1, j + 1, dest) == true) {
+      if (isDestination(i - 1, j, dest) == true) {
         // Set the Parent of the destination cell
-        cellDetails[i - 1][j + 1].parent_i = i;
-        cellDetails[i - 1][j + 1].parent_j = j;
+        cellDetails[i - 1][j].parent_i = i;
+        cellDetails[i - 1][j].parent_j = j;
         console.log("The destination cell is found\n");
         tracePath(cellDetails, dest);
         foundDest = true;
         return;
       }
-
       // If the successor is already on the closed
       // list or if it is blocked, then ignore it.
       // Else do the following
       else if (
-        closedList[i - 1][j + 1] == false &&
-        isUnBlocked(grid, i - 1, j + 1) == true
+        closedList[i - 1][j] == false &&
+        isUnBlocked(grid, i - 1, j) == true
       ) {
-        gNew = cellDetails[i][j].g + 1.414;
-        hNew = calculateHValue(i - 1, j + 1, dest);
+        // Cost to go north is 3
+        gNew = cellDetails[i][j].g + 3;
+        hNew = calculateHValue(i - 1, j, dest);
         fNew = gNew + hNew;
 
         // If it isn’t on the open list, add it to
@@ -443,32 +277,31 @@ function aStarSearch(grid, src, dest) {
         // to see if this path to that square is
         // better, using 'f' cost as the measure.
         if (
-          cellDetails[i - 1][j + 1].f == 2147483647 ||
-          cellDetails[i - 1][j + 1].f > fNew
+          cellDetails[i - 1][j].f == 2147483647 ||
+          cellDetails[i - 1][j].f > fNew
         ) {
-          openList.set(fNew, [i - 1, j + 1]);
+          openList.set(fNew, [i - 1, j]);
 
           // Update the details of this cell
-          cellDetails[i - 1][j + 1].f = fNew;
-          cellDetails[i - 1][j + 1].g = gNew;
-          cellDetails[i - 1][j + 1].h = hNew;
-          cellDetails[i - 1][j + 1].parent_i = i;
-          cellDetails[i - 1][j + 1].parent_j = j;
+          cellDetails[i - 1][j].f = fNew;
+          cellDetails[i - 1][j].g = gNew;
+          cellDetails[i - 1][j].h = hNew;
+          cellDetails[i - 1][j].parent_i = i;
+          cellDetails[i - 1][j].parent_j = j;
         }
       }
     }
 
-    //----------- 6th Successor (North-West)
-    //------------
+    //----------- 3rd Successor (East) ------------
 
     // Only process this cell if this is a valid one
-    if (isValid(i - 1, j - 1) == true) {
+    if (isValid(i, j + 1) == true) {
       // If the destination cell is the same as the
       // current successor
-      if (isDestination(i - 1, j - 1, dest) == true) {
+      if (isDestination(i, j + 1, dest) == true) {
         // Set the Parent of the destination cell
-        cellDetails[i - 1][j - 1].parent_i = i;
-        cellDetails[i - 1][j - 1].parent_j = j;
+        cellDetails[i][j + 1].parent_i = i;
+        cellDetails[i][j + 1].parent_j = j;
         console.log("The destination cell is found\n");
         tracePath(cellDetails, dest);
         foundDest = true;
@@ -479,11 +312,12 @@ function aStarSearch(grid, src, dest) {
       // list or if it is blocked, then ignore it.
       // Else do the following
       else if (
-        closedList[i - 1][j - 1] == false &&
-        isUnBlocked(grid, i - 1, j - 1) == true
+        closedList[i][j + 1] == false &&
+        isUnBlocked(grid, i, j + 1) == true
       ) {
-        gNew = cellDetails[i][j].g + 1.414;
-        hNew = calculateHValue(i - 1, j - 1, dest);
+        // Cost to go east is 2
+        gNew = cellDetails[i][j].g + 2;
+        hNew = calculateHValue(i, j + 1, dest);
         fNew = gNew + hNew;
 
         // If it isn’t on the open list, add it to
@@ -495,46 +329,46 @@ function aStarSearch(grid, src, dest) {
         // to see if this path to that square is
         // better, using 'f' cost as the measure.
         if (
-          cellDetails[i - 1][j - 1].f == 2147483647 ||
-          cellDetails[i - 1][j - 1].f > fNew
+          cellDetails[i][j + 1].f == 2147483647 ||
+          cellDetails[i][j + 1].f > fNew
         ) {
-          openList.set(fNew, [i - 1, j - 1]);
+          openList.set(fNew, [i, j + 1]);
+
           // Update the details of this cell
-          cellDetails[i - 1][j - 1].f = fNew;
-          cellDetails[i - 1][j - 1].g = gNew;
-          cellDetails[i - 1][j - 1].h = hNew;
-          cellDetails[i - 1][j - 1].parent_i = i;
-          cellDetails[i - 1][j - 1].parent_j = j;
+          cellDetails[i][j + 1].f = fNew;
+          cellDetails[i][j + 1].g = gNew;
+          cellDetails[i][j + 1].h = hNew;
+          cellDetails[i][j + 1].parent_i = i;
+          cellDetails[i][j + 1].parent_j = j;
         }
       }
     }
 
-    //----------- 7th Successor (South-East)
-    //------------
+    //----------- 4th Successor (South) ------------
 
     // Only process this cell if this is a valid one
-    if (isValid(i + 1, j + 1) == true) {
+    if (isValid(i + 1, j) == true) {
       // If the destination cell is the same as the
       // current successor
-      if (isDestination(i + 1, j + 1, dest) == true) {
+      if (isDestination(i + 1, j, dest) == true) {
         // Set the Parent of the destination cell
-        cellDetails[i + 1][j + 1].parent_i = i;
-        cellDetails[i + 1][j + 1].parent_j = j;
+        cellDetails[i + 1][j].parent_i = i;
+        cellDetails[i + 1][j].parent_j = j;
         console.log("The destination cell is found\n");
         tracePath(cellDetails, dest);
         foundDest = true;
         return;
       }
-
       // If the successor is already on the closed
       // list or if it is blocked, then ignore it.
       // Else do the following
       else if (
-        closedList[i + 1][j + 1] == false &&
-        isUnBlocked(grid, i + 1, j + 1) == true
+        closedList[i + 1][j] == false &&
+        isUnBlocked(grid, i + 1, j) == true
       ) {
-        gNew = cellDetails[i][j].g + 1.414;
-        hNew = calculateHValue(i + 1, j + 1, dest);
+        // Cost to go south is 1
+        gNew = cellDetails[i][j].g + 1;
+        hNew = calculateHValue(i + 1, j, dest);
         fNew = gNew + hNew;
 
         // If it isn’t on the open list, add it to
@@ -546,82 +380,30 @@ function aStarSearch(grid, src, dest) {
         // to see if this path to that square is
         // better, using 'f' cost as the measure.
         if (
-          cellDetails[i + 1][j + 1].f == 2147483647 ||
-          cellDetails[i + 1][j + 1].f > fNew
+          cellDetails[i + 1][j].f == 2147483647 ||
+          cellDetails[i + 1][j].f > fNew
         ) {
-          openList.set(fNew, [i + 1, j + 1]);
-
+          openList.set(fNew, [i + 1, j]);
           // Update the details of this cell
-          cellDetails[i + 1][j + 1].f = fNew;
-          cellDetails[i + 1][j + 1].g = gNew;
-          cellDetails[i + 1][j + 1].h = hNew;
-          cellDetails[i + 1][j + 1].parent_i = i;
-          cellDetails[i + 1][j + 1].parent_j = j;
+          cellDetails[i + 1][j].f = fNew;
+          cellDetails[i + 1][j].g = gNew;
+          cellDetails[i + 1][j].h = hNew;
+          cellDetails[i + 1][j].parent_i = i;
+          cellDetails[i + 1][j].parent_j = j;
         }
       }
     }
 
-    //----------- 8th Successor (South-West)
-    //------------
+    // When the destination cell is not found and the open
+    // list is empty, then we conclude that we failed to
+    // reach the destination cell. This may happen when the
+    // there is no way to destination cell (due to
+    // blockages)
+    if (foundDest == false)
+      console.log("Failed to find the Destination Cell\n");
 
-    // Only process this cell if this is a valid one
-    if (isValid(i + 1, j - 1) == true) {
-      // If the destination cell is the same as the
-      // current successor
-      if (isDestination(i + 1, j - 1, dest) == true) {
-        // Set the Parent of the destination cell
-        cellDetails[i + 1][j - 1].parent_i = i;
-        cellDetails[i + 1][j - 1].parent_j = j;
-        console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
-        foundDest = true;
-        return;
-      }
-
-      // If the successor is already on the closed
-      // list or if it is blocked, then ignore it.
-      // Else do the following
-      else if (
-        closedList[i + 1][j - 1] == false &&
-        isUnBlocked(grid, i + 1, j - 1) == true
-      ) {
-        gNew = cellDetails[i][j].g + 1.414;
-        hNew = calculateHValue(i + 1, j - 1, dest);
-        fNew = gNew + hNew;
-
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
-        //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
-        if (
-          cellDetails[i + 1][j - 1].f == FLT_MAX ||
-          cellDetails[i + 1][j - 1].f > fNew
-        ) {
-          openList.set(fNew, [i + 1, j - 1]);
-
-          // Update the details of this cell
-          cellDetails[i + 1][j - 1].f = fNew;
-          cellDetails[i + 1][j - 1].g = gNew;
-          cellDetails[i + 1][j - 1].h = hNew;
-          cellDetails[i + 1][j - 1].parent_i = i;
-          cellDetails[i + 1][j - 1].parent_j = j;
-        }
-      }
-    }
-  }
-
-  // When the destination cell is not found and the open
-  // list is empty, then we conclude that we failed to
-  // reach the destination cell. This may happen when the
-  // there is no way to destination cell (due to
-  // blockages)
-  if (foundDest == false) console.log("Failed to find the Destination Cell\n");
-
-  return;
+    return;
+  } // End while loop
 }
 
 // Driver program to test above function
@@ -640,12 +422,10 @@ let grid = [
   [1, 1, 1, 0, 0, 0, 1, 0, 0, 1],
 ];
 
-// Source is the left-most bottom-most corner
+// Source or entrance square
 let src = [8, 0];
 
-// Destination is the left-most top-most corner
+// Goal or exit square
 let dest = [0, 0];
 
 aStarSearch(grid, src, dest);
-
-// The code is contributed by Nidhi goel.
