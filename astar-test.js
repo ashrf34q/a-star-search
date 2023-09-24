@@ -1,9 +1,68 @@
-// TODO: Update how the heuristic value is calculated. (Manhattan distance)
+"use strict";
 
-let ROW = 9;
-let COL = 10;
+class QueueElement {
+  constructor(element, priority) {
+    this.element = element;
+    this.priority = priority;
+  }
+}
 
-// typedef pair<double, pair<int, int> > pPair;
+//   Priority Queue
+class Priority_Queue {
+  constructor() {
+    this.items = [];
+  }
+
+  //   Add the element to its corresponding spot in the priority queue based on its priority
+  enqueue(element, priority) {
+    let queueElement = new QueueElement(element, priority);
+    let lowestPr = true;
+
+    for (let i = 0; i < this.items.length; i++) {
+      if (this.items[i].priority > queueElement.priority) {
+        // Correct location found, so enqueue
+        this.items.splice(i, 0, queueElement);
+        lowestPr = false;
+        break;
+      }
+    }
+
+    if (lowestPr) {
+      this.items.push(queueElement);
+    }
+  }
+
+  isEmpty() {
+    return this.items.length === 0;
+  }
+
+  //   removes and returns the highest priority element
+  dequeue() {
+    if (this.isEmpty()) throw new Error("Underflow");
+    return this.items.shift();
+  }
+
+  //   returns highest priority element without removing it from the queue
+  front() {
+    if (this.isEmpty()) throw new Error("Queue is empty");
+    return this.items[0];
+  }
+
+  printPriorityQueue() {
+    for (let i = 0; i < this.items.length; i++) {
+      console.log(this.items[i].element + " ");
+    }
+  }
+
+  size() {
+    return this.items.length;
+  }
+}
+
+/* **************************************** */
+
+let ROW = 11;
+let COL = 12;
 
 // A structure to hold the necessary parameters
 class cell {
@@ -34,12 +93,35 @@ function isUnBlocked(grid, row, col) {
   else return false;
 }
 
+// A Utility Function to check whether destination cell has
+// been reached or not
+function isDestination(row, col, dest) {
+  if (row == dest[0] && col == dest[1]) return true;
+  else return false;
+}
+
 // A Utility Function to calculate the 'h' heuristics.
 function calculateHValue(row, col, dest) {
   // Return using the distance formula
-  return Math.sqrt(
-    (row - dest[0]) * (row - dest[0]) + (col - dest[1]) * (col - dest[1])
+  // return Math.sqrt(
+  //   (row - dest[0]) * (row - dest[0]) + (col - dest[1]) * (col - dest[1])
+  // );
+  const vertical = Math.abs(
+    row - dest[0] > 0 ? (row - dest[0]) * 3 : row - dest[0]
   );
+  const horizontal = Math.abs((col - dest[1]) * 2);
+
+  return vertical + horizontal;
+}
+
+function printFinalGrid(cellDetails) {
+  for (let i = 0; i < ROW; i++) {
+    for (let j = 0; j < COL; j++) {
+      if (grid[i][j] === 0) process.stdout.write("##".padEnd(4, "  "));
+      else process.stdout.write(cellDetails[i][j].label.padEnd(4, "  "));
+    }
+    console.log();
+  }
 }
 
 // A Utility Function to trace the path from the source
@@ -78,17 +160,11 @@ function tracePath(cellDetails, dest) {
   return;
 }
 
-// A Utility Function to check whether destination cell has
-// been reached or not
-function isDestination(row, col, dest) {
-  if (row == dest[0] && col == dest[1]) return true;
-  else return false;
-}
-
 //* A Function to find the shortest path between
 //* a given source cell to a destination cell according
 //* to A* Search Algorithm
 function aStarSearch(grid, src, dest) {
+  let labelState = 0;
   // If the source is out of range
   if (isValid(src[0], src[1]) == false) {
     console.log("Source is invalid\n");
@@ -119,6 +195,7 @@ function aStarSearch(grid, src, dest) {
   // Create a closed list and initialise it to false which
   // means that no cell has been included yet. This closed
   // list is implemented as a boolean 2D array
+
   let closedList = new Array(ROW);
   for (let i = 0; i < ROW; i++) {
     closedList[i] = new Array(COL).fill(false);
@@ -143,6 +220,7 @@ function aStarSearch(grid, src, dest) {
       cellDetails[i][j].h = 2147483647;
       cellDetails[i][j].parent_i = -1;
       cellDetails[i][j].parent_j = -1;
+      cellDetails[i][j].label = "-1";
     }
   }
 
@@ -153,6 +231,7 @@ function aStarSearch(grid, src, dest) {
   cellDetails[i][j].h = 0;
   cellDetails[i][j].parent_i = i;
   cellDetails[i][j].parent_j = j;
+  cellDetails[i][j].label = String(labelState);
 
   /*
 	Create an open list having information as-
@@ -163,37 +242,33 @@ function aStarSearch(grid, src, dest) {
 	This open list is implemented as a set of pair of
 	pair.*/
 
-  // TODO: Implement this with a priority queue instead of a map.
   // It's basically the same structure <f, <i,j>>. Except the priority queue is going to sort the elements as we enqueue
-  let openList = new Map();
+  let openList = new Priority_Queue();
 
   // Put the starting cell on the open list and set its
   // 'f' as 0
-  openList.set(0, [i, j]);
+  // openList.set(0, [i, j]);
+  openList.enqueue([i, j], 0);
 
-  console.log(openList);
   // We set this boolean value as false as initially
   // the destination is not reached.
   let foundDest = false;
 
   // Search starts here, We keep searching until we run out of nodes from the open list (The list in which the expanded nodes are added)
-  while (openList.size > 0) {
-    // This returns a 2D array like this [0, [8,2]]
-    let p = openList.entries().next().value;
-
-    // Remove this vertex from the open list
-    openList.delete(p[0]);
+  while (openList.size() > 0) {
+    // This will remove the vertex from the openList (priority queue)
+    let p = openList.dequeue();
 
     // Add this vertex to the closed list
-    i = p[1][0];
-    j = p[1][1];
+    i = p.element[0];
+    j = p.element[1];
 
     closedList[i][j] = true;
 
     /*
 		Generating all the 4 successors of this cell
 
-		Cell-->Popped Cell (i, j)
+		(i, j) represent the index 
 		N --> North	 (i-1, j)
 		S --> South	 (i+1, j)
 		E --> East	 (i, j+1)
@@ -212,8 +287,14 @@ function aStarSearch(grid, src, dest) {
         // Set the Parent of the destination cell
         cellDetails[i][j - 1].parent_i = i;
         cellDetails[i][j - 1].parent_j = j;
+        cellDetails[i][j - 1].label = String((labelState += 1)).padStart(
+          2,
+          "0"
+        );
         console.log("The destination cell is found\n");
         tracePath(cellDetails, dest);
+        console.log("\n*****************************\n");
+        printFinalGrid(cellDetails);
         foundDest = true;
         return;
       }
@@ -225,6 +306,7 @@ function aStarSearch(grid, src, dest) {
         closedList[i][j - 1] == false &&
         isUnBlocked(grid, i, j - 1) == true
       ) {
+        console.log("Left node");
         // cost to go west is 2
         gNew = cellDetails[i][j].g + 2;
         hNew = calculateHValue(i, j - 1, dest);
@@ -242,7 +324,8 @@ function aStarSearch(grid, src, dest) {
           cellDetails[i][j - 1].f == 2147483647 ||
           cellDetails[i][j - 1].f > fNew
         ) {
-          openList.set(fNew, [i, j - 1]);
+          // openList.set(fNew, [i, j - 1]);
+          openList.enqueue([i, j - 1], fNew);
 
           // Update the details of this cell
           cellDetails[i][j - 1].f = fNew;
@@ -250,6 +333,12 @@ function aStarSearch(grid, src, dest) {
           cellDetails[i][j - 1].h = hNew;
           cellDetails[i][j - 1].parent_i = i;
           cellDetails[i][j - 1].parent_j = j;
+
+          // The label for the next cell is the current cell's label plus 1
+          cellDetails[i][j - 1].label = String((labelState += 1)).padStart(
+            2,
+            "0"
+          );
         }
       }
     }
@@ -264,8 +353,14 @@ function aStarSearch(grid, src, dest) {
         // Set the Parent of the destination cell
         cellDetails[i - 1][j].parent_i = i;
         cellDetails[i - 1][j].parent_j = j;
+        cellDetails[i - 1][j].label = String((labelState += 1)).padStart(
+          2,
+          "0"
+        );
         console.log("The destination cell is found\n");
         tracePath(cellDetails, dest);
+        console.log("\n*****************************\n");
+        printFinalGrid(cellDetails);
         foundDest = true;
         return;
       }
@@ -276,6 +371,8 @@ function aStarSearch(grid, src, dest) {
         closedList[i - 1][j] == false &&
         isUnBlocked(grid, i - 1, j) == true
       ) {
+        console.log("North node");
+
         // Cost to go north is 3
         gNew = cellDetails[i][j].g + 3;
         hNew = calculateHValue(i - 1, j, dest);
@@ -293,7 +390,8 @@ function aStarSearch(grid, src, dest) {
           cellDetails[i - 1][j].f == 2147483647 ||
           cellDetails[i - 1][j].f > fNew
         ) {
-          openList.set(fNew, [i - 1, j]);
+          // openList.set(fNew, [i - 1, j]);
+          openList.enqueue([i - 1, j], fNew);
 
           // Update the details of this cell
           cellDetails[i - 1][j].f = fNew;
@@ -301,6 +399,11 @@ function aStarSearch(grid, src, dest) {
           cellDetails[i - 1][j].h = hNew;
           cellDetails[i - 1][j].parent_i = i;
           cellDetails[i - 1][j].parent_j = j;
+
+          cellDetails[i - 1][j].label = String((labelState += 1)).padStart(
+            2,
+            "0"
+          );
         }
       }
     }
@@ -315,8 +418,14 @@ function aStarSearch(grid, src, dest) {
         // Set the Parent of the destination cell
         cellDetails[i][j + 1].parent_i = i;
         cellDetails[i][j + 1].parent_j = j;
+        cellDetails[i][j + 1].label = String((labelState += 1)).padStart(
+          2,
+          "0"
+        );
         console.log("The destination cell is found\n");
         tracePath(cellDetails, dest);
+        console.log("\n*****************************\n");
+        printFinalGrid(cellDetails);
         foundDest = true;
         return;
       }
@@ -328,6 +437,8 @@ function aStarSearch(grid, src, dest) {
         closedList[i][j + 1] == false &&
         isUnBlocked(grid, i, j + 1) == true
       ) {
+        console.log("Right node");
+
         // Cost to go east is 2
         gNew = cellDetails[i][j].g + 2;
         hNew = calculateHValue(i, j + 1, dest);
@@ -345,7 +456,8 @@ function aStarSearch(grid, src, dest) {
           cellDetails[i][j + 1].f == 2147483647 ||
           cellDetails[i][j + 1].f > fNew
         ) {
-          openList.set(fNew, [i, j + 1]);
+          // openList.set(fNew, [i, j + 1]);
+          openList.enqueue([i, j + 1], fNew);
 
           // Update the details of this cell
           cellDetails[i][j + 1].f = fNew;
@@ -353,6 +465,11 @@ function aStarSearch(grid, src, dest) {
           cellDetails[i][j + 1].h = hNew;
           cellDetails[i][j + 1].parent_i = i;
           cellDetails[i][j + 1].parent_j = j;
+
+          cellDetails[i][j + 1].label = String((labelState += 1)).padStart(
+            2,
+            "0"
+          );
         }
       }
     }
@@ -367,8 +484,14 @@ function aStarSearch(grid, src, dest) {
         // Set the Parent of the destination cell
         cellDetails[i + 1][j].parent_i = i;
         cellDetails[i + 1][j].parent_j = j;
+        cellDetails[i + 1][j].label = String((labelState += 1)).padStart(
+          2,
+          "0"
+        );
         console.log("The destination cell is found\n");
         tracePath(cellDetails, dest);
+        console.log("\n*****************************\n");
+        printFinalGrid(cellDetails);
         foundDest = true;
         return;
       }
@@ -379,6 +502,8 @@ function aStarSearch(grid, src, dest) {
         closedList[i + 1][j] == false &&
         isUnBlocked(grid, i + 1, j) == true
       ) {
+        console.log("South node");
+
         // Cost to go south is 1
         gNew = cellDetails[i][j].g + 1;
         hNew = calculateHValue(i + 1, j, dest);
@@ -396,13 +521,20 @@ function aStarSearch(grid, src, dest) {
           cellDetails[i + 1][j].f == 2147483647 ||
           cellDetails[i + 1][j].f > fNew
         ) {
-          openList.set(fNew, [i + 1, j]);
+          // openList.set(fNew, [i + 1, j]);
+          openList.enqueue([i + 1, j], fNew);
+
           // Update the details of this cell
           cellDetails[i + 1][j].f = fNew;
           cellDetails[i + 1][j].g = gNew;
           cellDetails[i + 1][j].h = hNew;
           cellDetails[i + 1][j].parent_i = i;
           cellDetails[i + 1][j].parent_j = j;
+
+          cellDetails[i + 1][j].label = String((labelState += 1)).padStart(
+            2,
+            "0"
+          );
         }
       }
     }
@@ -423,21 +555,23 @@ function aStarSearch(grid, src, dest) {
 1--> The cell is not blocked
 0--> The cell is blocked */
 let grid = [
-  [1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
-  [1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
-  [1, 1, 1, 0, 1, 1, 0, 1, 0, 1],
-  [0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
-  [1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
-  [1, 0, 1, 1, 1, 1, 0, 1, 0, 0],
-  [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-  [1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
-  [1, 1, 1, 0, 0, 0, 1, 0, 0, 1],
+  [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], // source is here [0, 3]
+  [0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+  [0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0],
+  [0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1], // Goal state is here [3, 11]
+  [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+  [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0],
+  [0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+  [0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+  [0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
 // Source or entrance square
-let src = [2, 1];
+let src = [0, 3];
 
 // Goal or exit square
-let dest = [3, 9];
+let dest = [3, 11];
 
 aStarSearch(grid, src, dest);
