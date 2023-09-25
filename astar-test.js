@@ -6,7 +6,6 @@ class QueueElement {
     this.priority = priority;
   }
 }
-
 //   Priority Queue
 class Priority_Queue {
   constructor() {
@@ -27,6 +26,7 @@ class Priority_Queue {
       }
     }
 
+    // lowest priority, so just push it to the end
     if (lowestPr) {
       this.items.push(queueElement);
     }
@@ -42,6 +42,10 @@ class Priority_Queue {
     return this.items.shift();
   }
 
+  size() {
+    return this.items.length;
+  }
+
   //   returns highest priority element without removing it from the queue
   front() {
     if (this.isEmpty()) throw new Error("Queue is empty");
@@ -53,10 +57,6 @@ class Priority_Queue {
       console.log(this.items[i].element + " ");
     }
   }
-
-  size() {
-    return this.items.length;
-  }
 }
 
 /* **************************************** */
@@ -66,8 +66,7 @@ let COL = 12;
 
 // A structure to hold the necessary parameters
 class cell {
-  // Row and Column index of its parent
-  // Note that 0 <= i <= ROW-1 & 0 <= j <= COL-1
+  // Note that the following indexes 0 <= i <= ROW-1 && 0 <= j <= COL-1
   constructor() {
     this.parent_i = 0;
     this.parent_j = 0;
@@ -77,15 +76,9 @@ class cell {
   }
 }
 
-// A Utility Function to check whether given cell (row, col)
-// is a valid cell or not.
-function isValid(row, col) {
-  // Returns true if row number and column number
-  // is in range
-  return row >= 0 && row < ROW && col >= 0 && col < COL;
-}
+/* ******* HELPER FUNCTIONS **************/
 
-// A Utility Function to check whether the given cell is
+// A helper function to check whether the given cell is
 // blocked or not
 function isUnBlocked(grid, row, col) {
   //   Returns true if the cell is not blocked else falses
@@ -93,19 +86,24 @@ function isUnBlocked(grid, row, col) {
   else return false;
 }
 
-// A Utility Function to check whether destination cell has
+// A helper function to check whether the given cell (row, col)
+// is a valid cell or not.
+function isValid(row, col) {
+  // Returns true if row number and column number
+  // is in range
+  return row >= 0 && row < ROW && col >= 0 && col < COL;
+}
+
+// A helper Function to check whether destination cell has
 // been reached or not
 function isDestination(row, col, dest) {
   if (row == dest[0] && col == dest[1]) return true;
   else return false;
 }
 
-// A Utility Function to calculate the 'h' heuristics.
+// A helper Function to calculate the 'h' heuristic
 function calculateHValue(row, col, dest) {
-  // Return using the distance formula
-  // return Math.sqrt(
-  //   (row - dest[0]) * (row - dest[0]) + (col - dest[1]) * (col - dest[1])
-  // );
+  // Return using the modified manhattan distance formula
   const vertical = Math.abs(
     row - dest[0] > 0 ? (row - dest[0]) * 3 : row - dest[0]
   );
@@ -114,6 +112,7 @@ function calculateHValue(row, col, dest) {
   return vertical + horizontal;
 }
 
+// A helper function to print the final grid once we're done searching
 function printFinalGrid(cellDetails) {
   for (let i = 0; i < ROW; i++) {
     for (let j = 0; j < COL; j++) {
@@ -124,47 +123,11 @@ function printFinalGrid(cellDetails) {
   }
 }
 
-// A Utility Function to trace the path from the source
-// to destination
-function tracePath(cellDetails, dest) {
-  console.log("The Path is ");
-  let row = dest[0];
-  let col = dest[1];
-
-  // stack<Pair> Path;
-  let Path = [];
-
-  while (
-    !(
-      cellDetails[row][col].parent_i == row &&
-      cellDetails[row][col].parent_j == col
-    )
-  ) {
-    Path.push([row, col]);
-    let temp_row = cellDetails[row][col].parent_i;
-    let temp_col = cellDetails[row][col].parent_j;
-    row = temp_row;
-    col = temp_col;
-  }
-
-  Path.push([row, col]);
-  while (Path.length > 0) {
-    let p = Path[0];
-    Path.shift();
-
-    if (p[0] == 2 || p[0] == 1) {
-      console.log("-> (" + p[0] + ", " + (p[1] - 1) + ")");
-    } else console.log("-> (" + p[0] + ", " + p[1] + ")");
-  }
-
-  return;
-}
-
-//* A Function to find the shortest path between
-//* a given source cell to a destination cell according
-//* to A* Search Algorithm
+//* This is our A* algorithm, this is where the search happens
 function aStarSearch(grid, src, dest) {
+  // A state variable that keeps track of the label count
   let labelState = 0;
+
   // If the source is out of range
   if (isValid(src[0], src[1]) == false) {
     console.log("Source is invalid\n");
@@ -177,7 +140,7 @@ function aStarSearch(grid, src, dest) {
     return;
   }
 
-  // Either the source or the destination is blocked
+  // Either the source or the destination cell is blocked
   if (
     isUnBlocked(grid, src[0], src[1]) == false ||
     isUnBlocked(grid, dest[0], dest[1]) == false
@@ -186,23 +149,21 @@ function aStarSearch(grid, src, dest) {
     return;
   }
 
-  // If the destination cell is the same as source cell
+  // If the destination cell is the same as source cell, return right away
   if (isDestination(src[0], src[1], dest) == true) {
     console.log("We are already at the destination\n");
     return;
   }
 
-  // Create a closed list and initialise it to false which
-  // means that no cell has been included yet. This closed
-  // list is implemented as a boolean 2D array
-
+  // Create a closed list, which is a 2d array and initialise it to false which
+  // means that no cell has been included yet on this list
+  // The closed list just helps us keep track of visited nodes. If a cell at a given position is true, it's visited. False, it's not visited.
   let closedList = new Array(ROW);
   for (let i = 0; i < ROW; i++) {
     closedList[i] = new Array(COL).fill(false);
   }
 
-  // Declare a 2D array of structure to hold the details
-  // of that cell
+  // Another 2D array that holds the cell details like the f, g and h values and the label for every cell
   let cellDetails = new Array(ROW);
   for (let i = 0; i < ROW; i++) {
     cellDetails[i] = new Array(COL);
@@ -211,7 +172,6 @@ function aStarSearch(grid, src, dest) {
   let i, j;
 
   // Initialize all nodes in the maze the same f,g and h values.
-  // It's best to have all the cells initialized before we start searching
   for (i = 0; i < ROW; i++) {
     for (j = 0; j < COL; j++) {
       cellDetails[i][j] = new cell();
@@ -233,48 +193,38 @@ function aStarSearch(grid, src, dest) {
   cellDetails[i][j].parent_j = j;
   cellDetails[i][j].label = String(labelState);
 
-  /*
-	Create an open list having information as-
-	<f, <i, j>>
-	where f = g + h,
-	and i, j are the row and column index of that cell
-	Note that 0 <= i <= ROW-1 & 0 <= j <= COL-1
-	This open list is implemented as a set of pair of
-	pair.*/
-
-  // It's basically the same structure <f, <i,j>>. Except the priority queue is going to sort the elements as we enqueue
+  // We implement the open list as a structure <[i,j], f>. Where [i,j] are the indexes of the row and column of the cell respectively
+  // And f is our "priority" measure. In this PQueue, the node with the least f will be at the front of the queue
+  // This list is basically the list in which the expanded nodes are added
   let openList = new Priority_Queue();
 
-  // Put the starting cell on the open list and set its
-  // 'f' as 0
-  // openList.set(0, [i, j]);
+  // Put the starting cell on the open list and set its 'f' value as 0
   openList.enqueue([i, j], 0);
 
-  // We set this boolean value as false as initially
-  // the destination is not reached.
   let foundDest = false;
 
-  // Search starts here, We keep searching until we run out of nodes from the open list (The list in which the expanded nodes are added)
+  // Search starts here
   while (openList.size() > 0) {
-    // This will remove the vertex from the openList (priority queue)
     let p = openList.dequeue();
 
-    // Add this vertex to the closed list
+    // Get the node with the lowest f
     i = p.element[0];
     j = p.element[1];
 
+    // Set its corresponding position on the closed list as true, which signifies that it's visited
     closedList[i][j] = true;
 
     /*
 		Generating all the 4 successors of this cell
 
-		(i, j) represent the index 
+		In this order specifically
+    W --> West		 (i, j-1)
 		N --> North	 (i-1, j)
+    E --> East	 (i, j+1)
 		S --> South	 (i+1, j)
-		E --> East	 (i, j+1)
-		W --> West		 (i, j-1)*/
+		*/
 
-    // To store the generated 'g', 'h' and 'f' of the successors
+    // To store the generated 'g', 'h' and 'f' of the successors (expanded nodes)
     let gNew, hNew, fNew;
 
     //----------- 1st Successor (West) --------
@@ -291,8 +241,9 @@ function aStarSearch(grid, src, dest) {
           2,
           "0"
         );
+
+        // Once the destination is found, print that it's found, print the final grid and exit the loop
         console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
         console.log("\n*****************************\n");
         printFinalGrid(cellDetails);
         foundDest = true;
@@ -306,25 +257,19 @@ function aStarSearch(grid, src, dest) {
         closedList[i][j - 1] == false &&
         isUnBlocked(grid, i, j - 1) == true
       ) {
-        console.log("Left node");
         // cost to go west is 2
         gNew = cellDetails[i][j].g + 2;
         hNew = calculateHValue(i, j - 1, dest);
         fNew = gNew + hNew;
 
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
+        // If f === 2147483647, it means that this successor isn't on the open list. Add it to
+        // the open list and set its corresponding g, h and f values
         //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
+        // If it is on the open list already, check to see if this path to that specific successor is better, using 'f' as the cost measure.
         if (
           cellDetails[i][j - 1].f == 2147483647 ||
           cellDetails[i][j - 1].f > fNew
         ) {
-          // openList.set(fNew, [i, j - 1]);
           openList.enqueue([i, j - 1], fNew);
 
           // Update the details of this cell
@@ -357,8 +302,9 @@ function aStarSearch(grid, src, dest) {
           2,
           "0"
         );
+
+        // Destination cell is found, print final grid and exit the loop
         console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
         console.log("\n*****************************\n");
         printFinalGrid(cellDetails);
         foundDest = true;
@@ -371,26 +317,16 @@ function aStarSearch(grid, src, dest) {
         closedList[i - 1][j] == false &&
         isUnBlocked(grid, i - 1, j) == true
       ) {
-        console.log("North node");
-
         // Cost to go north is 3
         gNew = cellDetails[i][j].g + 3;
         hNew = calculateHValue(i - 1, j, dest);
         fNew = gNew + hNew;
 
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
-        //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
+        // Same as previous
         if (
           cellDetails[i - 1][j].f == 2147483647 ||
           cellDetails[i - 1][j].f > fNew
         ) {
-          // openList.set(fNew, [i - 1, j]);
           openList.enqueue([i - 1, j], fNew);
 
           // Update the details of this cell
@@ -422,8 +358,9 @@ function aStarSearch(grid, src, dest) {
           2,
           "0"
         );
+
+        // Destination cell is found, print final grid and exit the loop
         console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
         console.log("\n*****************************\n");
         printFinalGrid(cellDetails);
         foundDest = true;
@@ -437,26 +374,16 @@ function aStarSearch(grid, src, dest) {
         closedList[i][j + 1] == false &&
         isUnBlocked(grid, i, j + 1) == true
       ) {
-        console.log("Right node");
-
-        // Cost to go east is 2
+        // Cost to go East is 2
         gNew = cellDetails[i][j].g + 2;
         hNew = calculateHValue(i, j + 1, dest);
         fNew = gNew + hNew;
 
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
-        //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
+        // Same as previous ones
         if (
           cellDetails[i][j + 1].f == 2147483647 ||
           cellDetails[i][j + 1].f > fNew
         ) {
-          // openList.set(fNew, [i, j + 1]);
           openList.enqueue([i, j + 1], fNew);
 
           // Update the details of this cell
@@ -488,8 +415,9 @@ function aStarSearch(grid, src, dest) {
           2,
           "0"
         );
+
+        // Destination cell is found, print final grid and exit the loop
         console.log("The destination cell is found\n");
-        tracePath(cellDetails, dest);
         console.log("\n*****************************\n");
         printFinalGrid(cellDetails);
         foundDest = true;
@@ -502,21 +430,12 @@ function aStarSearch(grid, src, dest) {
         closedList[i + 1][j] == false &&
         isUnBlocked(grid, i + 1, j) == true
       ) {
-        console.log("South node");
-
-        // Cost to go south is 1
+        // Cost to go South is 1
         gNew = cellDetails[i][j].g + 1;
         hNew = calculateHValue(i + 1, j, dest);
         fNew = gNew + hNew;
 
-        // If it isn’t on the open list, add it to
-        // the open list. Make the current square
-        // the parent of this square. Record the
-        // f, g, and h costs of the square cell
-        //			 OR
-        // If it is on the open list already, check
-        // to see if this path to that square is
-        // better, using 'f' cost as the measure.
+        // Same as previous one
         if (
           cellDetails[i + 1][j].f == 2147483647 ||
           cellDetails[i + 1][j].f > fNew
@@ -540,11 +459,8 @@ function aStarSearch(grid, src, dest) {
     }
   } // End while loop
 
-  // When the destination cell is not found and the open
-  // list is empty, then we conclude that we failed to
-  // reach the destination cell. This may happen when the
-  // there is no way to destination cell (due to
-  // blockages)
+  // Open list is empty and still haven't found the destination?
+  // Just return that the destination cell hasn't been found and exit
   if (foundDest == false) console.log("Failed to find the Destination Cell\n");
 
   return;
@@ -568,10 +484,10 @@ let grid = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
-// Source or entrance square
+// Source
 let src = [0, 3];
 
-// Goal or exit square
+// Goal or destination
 let dest = [3, 11];
 
 aStarSearch(grid, src, dest);
